@@ -1,0 +1,253 @@
+---
+title: "Project"
+author: "Ranjini"
+date: "21/12/2020"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Task 1: Analysis
+
+# The data is loaded using the following command.
+```{r}
+cardata<-read.csv("~/Desktop/R-Programming/USA_cars_datasets.csv")
+```
+
+# The following command calculates of Frequency of cars with its brand name
+```{r}
+table(cardata$brand)
+```
+We can notice that car of the brand Ford is highly used by people(1235).
+
+# The following command calculates the number of observations having car price greater than 10000 dollars
+```{r}
+table(cardata$price>10000.0)
+```
+which says
+1884 observations with price >10000.0
+ 615 observations with price <=10000.0
+
+# The following command calculates the average price and average mileage(miles travelled) of cars
+```{r}
+apply(cardata[2],2,mean)
+apply(cardata[7],2,mean)
+```
+# The following command calculates the standard deviation and quautiles of the car price
+```{r}
+sd(cardata$price)
+```
+```{r}
+quantile(cardata$price)
+# Command showing 10th and 90th percentiles
+quantile(cardata$price,c(0.1,0.9)) 
+```
+
+# The following command produces a histogram of car selling price
+```{r}
+hist(cardata$price,main="Car Selling Price($)",xlab="car price($)",col="light green",ylim = c(0,500)) 
+```
+We can see that Selling price of majority of the cars is less than 20000$
+
+# The following command produces a table of the number of vehicle registrations for each year and a barplot.
+```{r}
+tab1<-table(cardata$year)
+tab1
+```
+```{r}
+barplot(tab1, xlab ="Year of vehicle registration",ylab="Number of registrations",las=2 ,cex.names=0.7,
+        main ="Plot showing number of vehicle registrations for each year",ylim=c(0,1000),col="orange")
+```
+We can see that majority of the vehicles are registered in the year 2019.
+
+# The following command produces a boxplot of car selling price for each car brand.
+```{r}
+splitdat<-split(cardata$price,cardata$brand)
+boxplot(splitdat,las=2 ,cex.names=1.0,
+        main="Car selling price by brand",
+       ylim=c(0,80000),col=rgb(1,0,0,alpha = 0.4))
+```
+
+# We install tidyverse library as ggplot2 is included in the tidyverse package.We can produce a ggplot to see car status.
+```{r}
+library(tidyverse)
+```
+
+```{r}
+ggplot(data=cardata,aes(x=title_status,y=price,fill=title_status))+ggtitle("Car  Status")+geom_violin(scale="area")+labs(x="Car Title Status",y="Car Selling Price")
+```
+Clean Vehicle:A clean title is one you would receive in most cases when you purchase a vehicle. A brand new vehicle has a clean title and most pre-owned vehicles that can be driven safely and are insurable.
+Salvage insurance:A salvage title is given when a vehicle is no longer drivable.
+
+Here the salvage insurance is more when the price of the car is low(0-20000)but on the other hand we can see that the clean title is lesser when the price of the car is 40000($) or above.
+
+# The following command will tell us which car color is mostly preferred in USA and Canada.
+```{r}
+ggplot(data=cardata,aes(country,color),width=500,height=4000)+geom_count()+ggtitle("Car Color in USA and Canada")+labs(x="Country",y="Car color")
+```
+We can say that the most preferred car color is White in USA and Canada.And USA has more number of White Color cars than Canada.
+
+# The The following command will give us summary of USA car dataset
+```{r}
+summary(cardata)
+```
+
+Task 2:
+
+#I have used PURRR package in the following section.Purrr package provides an excellent complete and consistent set of tools for working with functions and vectors.I have focused on functions provided by the purrr package of Purr package.
+
+loading the purr library
+```{r}
+library(purrr)
+```
+
+#Functions:
+
+# map()
+The map functions transform their input by applying a function to each element and returning a vector the same length as the input.
+Eg1:splits a data frame into pieces, fit a model to each piece and summarise the data
+```{r}
+cardata %>%
+  split(.$brand) %>%
+  map(~ lm(price ~ mileage, data = .)) %>%
+  map(summary)
+```
+
+#map_lgl()
+The map_lgl() will return a logical vector.This map_lgl() checks according to the function given to it.
+In first example,we check whether cardata has any Double data type.In the second example,map_lgl() checks whether dataset has integer values or not,if present shows as TRUE else false.Map function always returns lists.
+
+Eg1:
+```{r}
+map_lgl(cardata, is.double)
+```
+
+Eg2:
+```{r}
+map_lgl(cardata, is.integer)
+```
+
+# map_chr() 
+map_chr() will return a character vector
+```{r}
+map_chr(cardata, typeof)
+```          
+
+# as_mapper()
+The as_mapper() function arguments will allow you to refer to . for one argument functions, .x and .y for two argument functions, and ..1, ..2, ..3, etc, for functions with an arbitrary number of arguments. 
+```{r}
+as_mapper(~ length(unique(.cardata)))
+```
+
+# map_if 
+map_if() maps a function over the elements of dataset satisfying a predicate. 
+
+Eg1:Convert integers to characters 
+```{r}
+cardata %>%
+    map_if(is.integer, as.character) %>%
+    str()
+```
+
+# map_at
+This function will modify the elements corresponding to a character vector of names or a mumeric vector of positions.
+Eg1: Specify which columns to map with a numeric vector of positions:
+```{r}
+cardata %>% 
+    map_at(c(5, 9, 10), as.character) %>% #year,vin and lot
+    str()
+```
+Eg2: Specify which columns to map with a vector of names:
+```{r}
+cardata %>% map_at(c("year", "condition"), as.character) %>% str()
+```
+
+# map_dfr
+If we want each element of the output to be data frame, we can use  map_dfr to row-bind them together:
+```{r}
+cardata %>%
+  split(.$brand) %>%
+  map(~ lm(price ~ mileage, data = .x)) %>%
+  map_dfr(~ as.data.frame(t(as.matrix(coef(.)))))
+```
+
+Task 3:
+
+# Creating an S3 object
+```{r}
+s <- list(brand = 'Ford',price = 10300,model = "fiesta",year='2019' , title_status = "clean vehicle" ,
+          mileage =   18937 ,color= "black", vin = "3fadp4bjxkm123238" , lot=  167759377,state=" missouri")
+
+class(s) <- 'cardat1'
+s # or print(j)
+attributes(s)
+```
+
+#  print method
+```{r}
+print.cardat1 <- function(wkr) {
+  cat(wkr$brand, '\n')
+  cat('Price', wkr$price, '\n')
+  cat('model', wkr$model, '\n')
+  cat('year', wkr$year, '\n')
+  cat('Car_status', wkr$title_status, '\n')
+  cat('Car_mileage', wkr$mileage, '\n')
+  cat('color', wkr$color, '\n')
+  cat('vin', wkr$vin, '\n')
+  cat('lot', wkr$lot, '\n')
+  cat('state', wkr$state, '\n')
+}
+print.cardat1(s)
+```
+
+#Function gives the list of available cars when given the price is $4200
+
+```{r}
+dat<-cardata
+class(dat)<-"Car Details"
+print.car<-function(p)
+{
+    {cat("Data about particular given price($)", p, "\n")
+    print("\n")
+    p1<-filter(cardata,cardata$price == p)
+    print(p1)
+  }
+}
+print.car(4200)
+```
+
+#summary method
+```{r}
+print.summary1<-function(pr)
+{
+print(summary(print.car(pr)))
+}
+print.summary1(4200)
+```
+#plot method
+```{r}
+plot(print.car(4200))
+```
+
+#help document
+
+  install.packages("devtools")
+  install.packages("roxygen2")
+  library(devtools)
+  create("myRpackage")
+ 
+  #' @param p A number. 
+  #' @param p1 A vector
+  #' @return Cars of specified price value \code{A}
+  #' @examples
+  #' print.car(4200)
+print.car<-function(p) {
+   p1<-filter(cardata,cardata$price == p)
+   print(p1)
+}
+
+
+
